@@ -12,7 +12,7 @@ This file implements functions that accomplish the following:
 * Calculating the expected number of Satoshi that an output address receives from each of its input addresses.
 * Creating a CSV file that records input address, output address, transaction hash, and transaction value on each line.
 
-## graph_tools
+## graph_tools.py
 
 This file implements a class for address graphs. Important notes are the following:
 * The class inherits methods from the DiGraph class found in the __networkx__ module.
