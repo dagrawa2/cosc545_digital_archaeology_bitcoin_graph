@@ -7,5 +7,9 @@ import requests as req
 tx_hash = "f555ffc47eb31a3ce7cb644c49650afe60d41440473bcb962d1afc505ab99a9a"
 r = req.get("https://blockchain.info/rawtx/"+tx_hash)
 
-with open("output.json", "wb") as out:
-	out.write(r.content)
+#with open("output.json", "wb") as out:
+#	out.write(r.content)
+
+tx = json.loads(r.content)
+
+print tx["ver"]
