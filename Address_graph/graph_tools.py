@@ -29,8 +29,8 @@ class addr_graph(nx.DiGraph):
 		inputs = list(data.iloc[:,0].values)
 		# second column is output addresses
 		outputs = list(data.iloc[:,1].values)
-		# third column is transaction hashes
-		hashes = list(data.iloc[:,2].values)
+		# third column is transaction indeces
+		indeces = list(data.iloc[:,2].values)
 		# fourth column is expected transaction values
 		values = list(data.iloc[:,3].values)
 		# add a node for every address in the data
@@ -39,7 +39,7 @@ class addr_graph(nx.DiGraph):
 		# for each line in the data
 		for i in range(len(inputs)):
 			# draw an edge between addresses weighted by hash and value
-			self.add_edge(inputs[i], outputs[i], hash=hashes[i], value=float(values[i]))
+			self.add_edge(inputs[i], outputs[i], tx_index=int(indeces[i]), value=float(values[i]))
 
 
 def save(graph, filename):

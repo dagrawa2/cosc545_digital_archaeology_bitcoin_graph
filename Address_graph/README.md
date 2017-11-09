@@ -23,12 +23,10 @@ This file implements a class for address graphs. Important notes are the followi
 
 The files __data_tools.py__ and __graph_tools.py__ contain only functions and classes. The file __main.py__ imports __data_tools.py__ and __graph_tools.py__ as modules and uses them to go through all the steps-- download and save blockchain data, extract and save CSV data, and build and save an address graph. A few simple attributes of the final address graph are then evaluated (e.g., number of nodes).
 
+## main_entire.py
+
+This file is similar to main.py. But it uses the newly added function __build_entire_csv__ from data_tools.py to download multiple blocks. This function accepts a block hash and a number that specifies how many blocks leading up to the given hash should be downloaded. Currently, main_entire.py is set to download three blocks.
+
 ## Output Files
 
 The files __block.json__, __data.csv__, and __graph__ are generated when __main.py__ is run.
-
-## Question
-
-We know that every transaction in the blockchain defines a complete bipartite graph between its input addresses and output addresses. If we only use one block, then it is possible that an address is involved in very few transactions. The final graph would then be a bunch of bipartite graphs (one per transaction) that are not connected to each other. This would be very boring!
-
-So how could we check otherwise? We would like to find addresses that have both incoming edges and outgoing edges. If we find no such address, then we havent collected enough data. Try it out! (Hint: Look at the methods for in-degree and out-degree mentioned at the end of __main.py__)
