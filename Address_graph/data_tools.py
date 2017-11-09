@@ -3,7 +3,6 @@ from __future__ import division
 import json
 import requests as req
 
-
 def save_block(block_hash, filename):
 	"""
 	Retrieves the block JSON with hash block_hash and
@@ -75,7 +74,9 @@ def get_addr_value(tx):
 
 def build_csv(block_hash_or_file, filename_csv, local=False, append=False):
 	"""
-	Generates a CSV data file for building an address graph.
+	Generates a CSV data file for building an address graph;
+	the headers of the CSV file are:
+	InputAddress, OutputAddress, TransactionIndex, ExpectedValue.
 	Args:
 		block_hash_or_file (str): Block hash (default) or filename of a block JSON.
 			This is the source of the data.
@@ -94,7 +95,7 @@ def build_csv(block_hash_or_file, filename_csv, local=False, append=False):
 	else:
 		# open a fresh CSV file and write headers
 		file = open(filename_csv, "w")
-		file.write("InputAddresses,OutputAddresses,TransactionHash,ExpectedValue\r\n")
+		file.write("InputAddress,OutputAddress,TransactionIndex,ExpectedValue\r\n")
 	if local == True:
 		# load block JSON from local file
 		with open(block_hash_or_file, "rb") as fp:
@@ -112,7 +113,7 @@ def build_csv(block_hash_or_file, filename_csv, local=False, append=False):
 			# for each output address
 			for j in range(len(out_addr)):
 				# record as coin base transaction
-				file.write("base,"+out_addr[j]+","+tx["hash"]+","+str(out_value[j])+"\r\n")
+				file.write("base,"+out_addr[j]+","+str(tx["tx_index"])+","+str(out_value[j])+"\r\n")
 		# if input addresses exist
 		else:
 			# get total input value
@@ -121,5 +122,56 @@ def build_csv(block_hash_or_file, filename_csv, local=False, append=False):
 			for i in range(len(in_addr)):
 				for j in range(len(out_addr)):
 					# record transaction with _expected_ value
-					file.write(in_addr[i]+","+out_addr[j]+","+tx["hash"]+","+str(out_value[j]*in_value[i]/total_input)+"\r\n")
+					file.write(in_addr[i]+","+out_addr[j]+","+str(tx["tx_index"])+","+str(out_value[j]*in_value[i]/total_input)+"\r\n")
+	file.close()
+
+def build_entire_csv(block_hash, filename_csv, num_blocks=1, append=False):
+	"""
+	Generates a CSV data file from multiple blocks for building an address graph;
+	the headers of the CSV file are:
+	InputAddress, OutputAddress, TransactionIndex, ExpectedValue.
+	Args:
+		block_hash (str): Hash of the most recent block from which data is to be extracted.
+		filename_csv (str): Filename where the CSV data will be written.
+		num_blocks (int): Number of blocks from which data is to be extracted.
+			This includes block_hash and the num_blocks-1 blocks preceding it.
+		append (boole): If False, then filename_csv is opened in "w" mode.
+			If True, then filename_csv is opened in "a" mode.
+			Column headers are written only if False.
+	"""
+	if append == True:
+		# open CSV file in "a" mode
+		file = open(filename_csv, "a")
+	else:
+		# open a fresh CSV file and write headers
+		file = open(filename_csv, "w")
+		file.write("InputAddresses,OutputAddresses,TransactionHash,ExpectedValue\r\n")
+	# loop over initial and previous blocks
+	for count in range(num_blocks):
+		print "Getting block "+str(count)+" . . . "
+		# get block JSON from blockchain.info API
+		r = req.get("https://blockchain.info/rawblock/"+block_hash)
+		block = json.loads(r.content)
+		# for each transaction in block
+		for tx in block["tx"]:
+			# get addresses and values
+			in_addr, in_value, out_addr, out_value = get_addr_value(tx)
+			# if no input addresses
+			if len(in_addr) == 0:
+				# for each output address
+				for j in range(len(out_addr)):
+					# record as coin base transaction
+					file.write("base,"+out_addr[j]+","+str(tx["tx_index"])+","+str(out_value[j])+"\r\n")
+			# if input addresses exist
+			else:
+				# get total input value
+				total_input = sum(in_value)
+				# for each input address and each output address
+				for i in range(len(in_addr)):
+					for j in range(len(out_addr)):
+						# record transaction with _expected_ value
+						file.write(in_addr[i]+","+out_addr[j]+","+str(tx["tx_index"])+","+str(out_value[j]*in_value[i]/total_input)+"\r\n")
+		print "Block "+str(count)+" complete!"
+		# set to previous block
+		block_hash = block["prev_block"]
 	file.close()
