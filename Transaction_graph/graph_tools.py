@@ -25,6 +25,7 @@ class tx_graph(nx.DiGraph):
 		"""
 		# read data
 		data = pd.read_csv(filename)
+		data = data.iloc[1:,:] # temporary fix for nan values
 		# first column is input transactions
 		inputs = list(data.iloc[:,0].values)
 		# second column is output transactions
@@ -56,11 +57,37 @@ class tx_graph(nx.DiGraph):
 				H.node[T]["temp"] = sum([H.edge[T][U]["p"]*H.node[U]["temp"] for U in H.successors(T)])
 		return H.node[tx_root]["temp"]
 
+	def gen_flow_data(self, tx_leaf, filename):
+		if self.in_degree(tx_leaf) == 0:
+			file = open(filename, "w")
+			file.write("distance,flow\n")
+			file.write("0,1")
+			file.close()
+			return
+		ancestors = set([tx_leaf]).union(nx.ancestors(self, tx_leaf))
+		H = self.subgraph(ancestors)
+		ancestors = None
+		nx.set_node_attributes(H, "distance", 0)
+		nx.set_node_attributes(H, "flow", 1)
+		layers = create_layers(H)
+		distance = 0
+		for layer in layers[1:]:
+			distance += 1
+			for T in layer:
+				H.node[T]["distance"] = distance
+				H.node[T]["flow"] = sum([H.edge[T][U]["p"]*H.node[U]["flow"] for U in H.successors(T)])
+		file = open(filename, "w")
+		file.write("distance,flow\n")
+		for T in H.nodes():
+			file.write(str(H.node[T]["distance"])+","+str(H.node[T]["flow"])+"\n")
+		file.close()
+		return
+
 def create_layers(G):
 	H = nx.DiGraph(G)
 	layers = []
 	for i in range(H.order()):
-		L = [N for N in H.nodes() if H.in_degree(N) == 0]
+		L = [N for N in H.nodes() if H.out_degree(N) == 0]
 		layers.append(L)
 		H.remove_nodes_from(L)
 		if H.nodes() == []:
