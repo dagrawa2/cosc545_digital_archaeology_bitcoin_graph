@@ -1,6 +1,13 @@
 This directory contains a script called analyze.py that automates most of the data generation. After that, we just have to plot and look for trends or anything worth presenting.
 
-Do NOT delete or rename any of the subdirectories.
+Do NOT delete or rename any of the subdirectories. If no subdirectories exist, then create the following subdirectories:
+	Collected_data
+	Comp_distros
+	Flow_distros
+	Graph_data
+	In_degree_distros
+	Out_degree_distros
+	Plots
 
 Follow these steps:
 
