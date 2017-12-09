@@ -17,14 +17,14 @@ class tx_graph(nx.DiGraph):
 		"""
 		nx.DiGraph.__init__(self)
 
-	def read_data(self, filename):
+	def read_data(self, filename, compression="infer"):
 		"""
 		Builds graph from edge data recorded in filename.
 		Args:
 			filename (str): Filename of CSV data.
 		"""
 		# read data
-		data = pd.read_csv(filename)
+		data = pd.read_csv(filename, compression=compression)
 		data = data.dropna()
 		# first column is input transactions
 		inputs = list(data.iloc[:,0].values)

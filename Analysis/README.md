@@ -1,64 +1,54 @@
-This directory contains a script called analyze.py that automates most of the data generation. After that, we just have to plot and look for trends or anything worth presenting.
+# Update: November 28, 2017
 
-Do NOT delete or rename any of the subdirectories. If no subdirectories exist, then create the following subdirectories:
-	Collected_data
-	Comp_distros
-	Flow_distros
-	Graph_data
-	In_degree_distros
-	Out_degree_distros
-	Plots
+## What I Did
 
-Follow these steps:
+I downloaded the 2015, 2016, and 2017 data from dropbox. I did not use the 2014 data as I saw that some of the CSV files in the 2014 folder were very large, and I suspected that these particular CSV files contained more than 100 blocks.
 
-1. You should have collected various 1000-block chunks of data. You collected each chunk starting with a block hash. Find the date associated to this seed block hash; you can just look up the hash on blockchain.info, and it will give you the time stamp. Rename the .csv file storing the chunk in the form
-	year-month-day.csv.
-For example, suppose I have a 1000-block chunk of data that I collected with a seed block hash dated January 7, 2015. Then I should name the file
-	2015-01-07.csv.
-Note the leading zeros for month and day; this is very important!
+I took all the CSV files from the 2015, 2016, and 2017 folders and compressed them to .csv.gz format. There were 23 files in all: May-December 2015, May-December 2016, and May-November 2017. I placed all 23 .csv.gz files into the Collected_data folder.
 
-2. Place all your 1000-block chunk csv files in the subdirectory "Collected_data".
+I modified analyze.py so it would uncompress .gz files on the fly. I ran analyze.py. This file loops over all files in Collected_data. For each file, the script analyze.py builds the 100-block transaction graph and records many of its attributes (see Analysis/README.md on github). It also records the time stamp for each 100-block chunk. The time stamp and graph attributes for each chunk are written into rows in Graph_data/data.csv.
 
-3. (For non-Windows users only). Open analyze.py. Use find-and-replace to replace all double backslashes (\\) with a single forward slash (/). This converts all path strings into unix style.
+In addition, analyze.py generates frequency data for in-degree, out-degree, component size, and bitcoin flow for each 100-block chunk. Each set of frequency data is a CSV file with the first column all unique values of an attribute (e.g., in-degree) and the second column the non-zero frequencies of these values. These CSV files are stored in the *-distros folders.
 
-4. Run analyze.py (with python 2.7). This could take a long time; it works well on 100-block chunks, and I hope it scales well to 1000-block chunks!
+I wrote sort.py. This script reads in the data from Graph_data/data.csv and sorts the rows chronologically (just in case we decided to append 2014 data to data.csv later). The script also adds a new first column that simply indexes the rows with integers.
 
-5. Once analyze.py is finished executing, all subdirectories except Plots should be populated with data files.
+I wrote and ran plot_time.py. This generates the following image files stored in the Plots folder:
+1. order.png: Plot of the 100-block graph order over time.
+2. in_degree.py: Plot of the graph mean in_degree (plus standard deviation indicated by dashed curve) over time. I do not plot one unit standard deviation below the mean as the in-degree distribution for each month is highly skewed to small values so that standard deviation below the mean is useless.
+3. out_degree.png: Analogous to in_degree.png but with out-degree.
+4. comp.png: Analogous to in_degree.png but with component size.
+5. flow.png: Analogous to in_degree.png but with flow.
 
-So let me explain what analyze.py is doing and what data files it generates:
+I wrote plot_in_degree.py. This plots In_degree/2017-11-15.csv on a log-log scale up to in-degree 100; the in-degree plateaus after 100. The resulting image file is Plots/2017-11-15_in_degree.png. Please feel free to run this script again but for a different time stamp; if you do this, then make sure to change the time stamp both at the beginning of the file (in pd.read_csv) and at the end of the file (in fig.savefig).
 
-The file analyze.py loops over all files you placed in the Collected_data subdirectory. For each file, it generates a bunch of graph attributes and writes them to a single csv file. So the result is a file Graph_data/attributes.csv whose rows correspond to 1000-block chunks with different time stamps and whose columns are different graph attributes.
+I wrote and ran plot_out_degree.py and plot_comp.py in analogy to plot_in_degree.py.
 
-Here are the attributes generated for each 1000-block chunk:
+I wrote plot_flow.py. This plots Flow_distros/2017-11-15.csv as a scatter plot; unlike the previous three plots, this plot is not a distribution but instead plots flow to see how it varies with distance.
 
-1. year: analyze.py parses the name of each file in Collected_data and extracts the year of the first block hash. This is why renaming your csv files to time stamps is so important.
+Note: I do not feel like explaining what I mean by "flow". If you are not sure what I mean, then please ask me.
 
-2. month: Analogous to year.
 
-3. day: Analogous to year and month.
+## Discussion
 
-4. order: Once the date has been parsed, analyze.py builds the graph from the given csv data. It records the number of nodes.
+I looked at the plots (with some help from the eyes of others). Most of them are boring.
 
-5. minInDegree: Next, analyze.py builds the in-degree distribution of the graph (i.e., the number of parent nodes that each node has). The in-degree of 0 is dropped since this value is an artifact of or sampling; if we had the whole block chain, then the only node with in-degree 0 would be "coin base". Once the in-degree distro is obtained, its minimum is returned.
+In-degree, out-degree, and component size are about constant with time. Their means are all very small but their distributions are very skewed.
 
-6. maxInDegree: max of the in-degree distro.
+Order increases with time. This is actually interesting. It means that 100-block chunks contain more and more transactions with time. This either means people are becoming more active as a whole (perhaps more users) or simply that people are prefering to mine larger blocks.
 
-7. meanInDegree: mean of the in-degree distro.
+Mean flow is close to 0 initially but then begins to fluctuate between 0 and 1 after some time point. When flow is large, it means that there is a strong connection between transactions via bitcoin flow despite separation by many transaction links.
 
-8. stdInDegree: std of the in-degree distro. Also, a csv file containing the in-degree distribution is generated and saved in the In_degree_distro subdirectory. One csv file is generated for each time stamp listed in Collected_data; thus, you can view the degree distro for each of your 1000-block chunks.
+I plotted the in-degree, out-degree, and component size distributions on log-log scales. The curves are approximately linear. This indicates that these distributions follow power laws. We can then conclude that our 100-block transaction graphs are scale-free. This is a well-known fact about the bitcoin network and in fact holds for many large networks. The fact that we were able to reproduce these distributions means that we were able to capture some structure with 100-blocks that actually reflects the entire block chain.
 
-9-12. We do the same as 5-8 but with the out-degree distribution. We again drop the value 0 since it is an artifact of our sampling. The distro is also saved in the Out_degree distro subdirectory.
+The distance-flow plot for 2017-11-15 is interesting. The flow is 1.0 for distances up to about 23. After that, the flow drops to almost 0. This indicates that nodes are tightly connected in the sense of sharing common bitcoins for up to 23 transaction links. Flow diffuses beyond that. This is not as exciting as it looks. It could simply mean that the nodes for the first 23 transaction links were connected in a path with no additional children. In other words, we simply found a path of 23 single-input transactions.
 
-13-16. components: The graph is disconnected and has many components. The script analyze.py gathers the sizes (orders) of all components and builds a distribution. The min, max, mean, and std are recorded as before. The distro for each time stamp is saved as csv in the Comp_distros subdirectory.
+In conclusion, we learned nothing surprising or interesting. We have no "real world" insights or "why should I care" responses. But we do have lots of data and pretty plots-- that counts, right?
 
-17. longestPathLength: analyze.py nexts finds the longest path in the graph and stores its length.
 
-18-21: flow: The script finds the head T of the longest path found above. The script then calls gen_flow_data to compute the probability that each bitcoin belonging to T came from each one of its ancestors. The option is currently set so that the flow only goes back 50 generations; we do not consider flow along transaction chains longer than 50, as the probabilities approach 0 and are useless to record. As before, we save the flow data as csv in Flow_data and we record its min, max, mean, and std in the master csv Graph_data/attributes.csv.
+# Update: November 30, 2017
 
-So the end result is that we have the in-degree distros, out-degree distros, component size distros, and flow vs. distance data for all the 1000-block chunks you collected. You can plot these csvs to look for interesting features.
+## What I Did
 
-We also have a master csv in Graph_data that records the min, max, mean, and std of each of the above distros.
+I created four new scripts called plot_comp_all.py, plot_flow_all.py, plot_in_degree_all.py, and plot_out_degree_all.py. These scripts generate component size distributions, distance-flow scatter plots, in-degree distributions, and out-degree distributions for all 23 time stamps. Therefore, these scripts are just extensions of plot_comp.py, plot_flow.py, plot_in_degree.py, and plot_out_degree.py respectively.
 
-Once you are finished, send me your Graph_data/attributes.csv file (it shouldn't be heavy). I will compile everyone's data and sort the rows in chronological order. We can then plot these attributes vs time to see how the graph structure might have evolved over time.
-
-I am currently working on other things as well. For example, it may be better to analyze not the entire 1000-block chunk but only its largest connected component. This would be most similar to a real "block chain". (note: the entire block chain would have been connected since all transactions ultimately connect back to the node "coin base"). This idea is a simple modification of this current directory. We can talk about it more tomorrow.
+the Plots folder contains the subfolders Comp_distros, Flow_distros, In_degree_distros, Out_degree_distros, and Time. The Time folder contains all the "over time" plots. The Flow_distros folder contains all the distance-flow scatter plots. The other three folders contain all the distributions.

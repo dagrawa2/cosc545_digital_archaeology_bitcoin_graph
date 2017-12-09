@@ -1,9 +1,11 @@
 from __future__ import division
+import gzip
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import os
 import pandas as pd
+import time
 import graph_tools as gt
 
 def freqs(L):
@@ -12,7 +14,8 @@ def freqs(L):
 		D[l] += 1
 	return D
 
-file = open("Graph_data\\attributes.csv", "w")
+file = open("Graph_data\\data.csv", "w")
+
 filenames = os.listdir("Collected_data")
 
 headers = ["year", "month", "day", "order", "minInDegree", "maxInDegree", "meanInDegree", "stdInDegree", "minOutDegree", "maxOutDegree", "meanOutDegree", "stdOutDegree", "minComp", "maxComp", "meanComp", "stdComp", "longestPathLength", "minFlow", "maxFlow", "meanFlow", "stdFlow"]
@@ -24,6 +27,8 @@ line = line[:-1]+"\n"
 file.write(line)
 
 for filename in filenames:
+	time_0 = time.time()
+	filename = filename[:-3]
 	print "Processing "+filename+" . . . "
 	D = {}
 	D.update({ \
@@ -33,7 +38,7 @@ for filename in filenames:
 	})
 	print "\tBuilding graph . . . "
 	G = gt.tx_graph()
-	G.read_data("Collected_data\\"+filename)
+	G.read_data("Collected_data\\"+filename+".gz", compression="gzip")
 	print "\tProcessing in-degree distribution . . . "
 	in_degrees = np.array([d for d in G.in_degree().values() if d > 0])
 	in_degree_freqs = freqs(in_degrees)
@@ -80,7 +85,7 @@ for filename in filenames:
 	print "\tProcessing flow distribution . . . "
 	path = sorted(nx.dag_longest_path(G))
 	length = len(path)
-	G.gen_flow_data(path[-1], "Flow_distros\\"+filename, max_distance=min(50, length))
+	G.gen_flow_data(path[-1], "Flow_distros\\"+filename, max_distance=min(100, length))
 	flow = pd.read_csv("Flow_distros\\"+filename)
 	flow = flow.as_matrix()[:,1]
 	D.update({ \
@@ -96,6 +101,7 @@ for filename in filenames:
 		line += str(D[header])+","
 	line = line[:-1]+"\n"
 	file.write(line)
+	print "\ttook "+str(np.round(time.time()-time_0, 3))+" seconds\n"
 
 file.close()
 print "Done!"
